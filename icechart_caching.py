@@ -5,10 +5,11 @@ import zipfile
 import geopandas as gpd
 from shapely.geometry import box
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 from loguru import logger
 import json
 from requests.auth import HTTPBasicAuth
+import numpy as np
 
 os.environ['SHAPE_RESTORE_SHX'] = 'YES'
 
@@ -93,8 +94,9 @@ def clip_land_area(icechart_shape_path, landcontour_shape_path, bbox_to_clip=(7.
             icechart_gdf["pubtime"] = date_obj.strftime("%d.%m.%Y")
             logger.success("Publication time updated")
         except Exception as e:
+            date_obj = np.nan
             logger.warning(f"Could not update publication date: {e}")
-        return icechart_gdf
+        return icechart_gdf, date_obj
     except Exception as e:
         logger.error(f"An error occurred during clipping: {e}")
         raise
@@ -146,6 +148,7 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
 
         if response.status_code == 200:
             logger.info("GWC truncate request successful.")
+            return response.status_code
         else:
             logger.error(
                 f"GWC truncate request failed. "
@@ -153,7 +156,7 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
                 f"Reason: {response.reason}, "
                 f"Response: {response.text}"
             )
-        return response
+            return response.status_code
     except requests.exceptions.RequestException as e:
         logger.error(f"Request failed with exception: {e}", exc_info=True)
         raise
@@ -162,12 +165,32 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
 def main():
     try:
         os.makedirs(EXPORT_PATH, exist_ok=True)
-        icechart_gdf = clip_land_area(get_latest_icechart(), get_land_contour())
+        icechart_gdf, pubdate = clip_land_area(get_latest_icechart(), get_land_contour())
         output_path = os.path.join(EXPORT_PATH, f"{os.getenv('SWI-SEAICE-LAYER-FILE-NAME','latest')}.shp")
         icechart_gdf.to_file(output_path, driver='ESRI Shapefile')
         logger.success(f"Clipped ice chart saved to {output_path}")
-        trigger_truncate_gwc()
+
+        status_code = trigger_truncate_gwc()
+
+        if status_code == 200:
+            # Determine if pubdate is today (weekday) or latest Friday (weekend)
+            today = datetime.now().date()
+            if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+                latest_friday = today - timedelta(days=today.weekday() - 4)  # 4 = Friday
+                target_date = latest_friday
+            else:
+                target_date = today
+
+            if pubdate.date() == target_date:
+                endpoint = os.getenv('SWI-SEAICE-MONITORING-ENDPOINT')
+                if endpoint:
+                    response = requests.get(endpoint)
+                    logger.info(f"GET request to {endpoint} returned status code: {response.status_code}")
+                else:
+                    logger.warning("SWI-SEAICE-MONITORING-ENDPOINT environment variable not set")
+
         shutil.rmtree(PATH_ICECHART_DATA, ignore_errors=True)
+
     except Exception as e:
         logger.error(f"Failed to save clipped data: {e}")
         raise

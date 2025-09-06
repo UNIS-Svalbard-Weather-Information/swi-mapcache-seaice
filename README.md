@@ -6,12 +6,13 @@ This container is designed to fetch the latest sea ice chart from the Norwegian 
 
 To establish a connection with GeoServer, the following environment variables must be configured:
 
-| Variable                     | Description                                      |
-| ---------------------------- | ------------------------------------------------ |
-| `SWI-GEOSERVER-URL`          | URL of the GeoServer instance                    |
-| `SWI-GEOSERVER-USERNAME`     | Username for GeoServer authentication            |
-| `SWI-GEOSERVER-PWD`          | Password for GeoServer authentication            |
-| `SWI-SEAICE-LAYER-FILE-NAME` | Name of the output shapefile (default: `latest`) |
+| Variable                         | Description                                                            |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `SWI-GEOSERVER-URL`              | URL of the GeoServer instance                                          |
+| `SWI-GEOSERVER-USERNAME`         | Username for GeoServer authentication                                  |
+| `SWI-GEOSERVER-PWD`              | Password for GeoServer authentication                                  |
+| `SWI-SEAICE-LAYER-FILE-NAME`     | Name of the output shapefile (default: `latest`)                       |
+| `SWI-SEAICE-MONITORING-ENDPOINT` | URL of the endpoint to request to informe of the successful processing |
 
 ### Output
 
