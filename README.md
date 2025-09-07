@@ -4,16 +4,15 @@ This container is designed to fetch the latest sea ice chart from the Norwegian 
 
 ### Environment Variables
 
-To establish a connection with GeoServer, the following environment variables must be configured:
+To establish a connection with Deegree3, the following environment variables must be configured:
 
 | Variable                         | Description                                                            |
 | -------------------------------- | ---------------------------------------------------------------------- |
-| `SWI-GEOSERVER-URL`              | URL of the GeoServer instance                                          |
-| `SWI-GEOSERVER-USERNAME`         | Username for GeoServer authentication                                  |
-| `SWI-GEOSERVER-PWD`              | Password for GeoServer authentication                                  |
+| `SWI-DEEGREE-URL`              | URL of the Deegree3 instance                                          |
+| `SWI_DEEGREE_REST_API_KEY`         | Username for Deegree3 authentication                                  |
 | `SWI-SEAICE-LAYER-FILE-NAME`     | Name of the output shapefile (default: `latest`)                       |
 | `SWI-SEAICE-MONITORING-ENDPOINT` | URL of the endpoint to request to informe of the successful processing |
 
 ### Output
 
-The generated shapefile will be saved in `/swi/export`. Ensure this directory is mapped to the corresponding storage location on GeoServer.
+The generated shapefile will be saved in `/swi/export`. Ensure this directory is mapped to the corresponding storage location on Deegree3.

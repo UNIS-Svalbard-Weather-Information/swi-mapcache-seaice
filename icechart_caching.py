@@ -161,18 +161,103 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
         logger.error(f"Request failed with exception: {e}", exc_info=True)
         raise
     
+def trigger_reload():
+    """
+    Sends a GET request to the SWI-DEEGREE-URL/config/update endpoint using the SWI_DEEGREE_REST_API_KEY
+    as a token parameter. The URL and API key are read from environment variables.
+
+    Returns:
+        int: The HTTP status code of the response, or -1 if an error occurs.
+    """
+    swi_degree_url = os.getenv("SWI-DEEGREE-URL")
+    swi_degree_rest_api_key = os.getenv("SWI_DEEGREE_REST_API_KEY")
+
+    print(swi_degree_url, swi_degree_rest_api_key )
+
+    if not swi_degree_url or not swi_degree_rest_api_key:
+        logger.error("Environment variables SWI-DEEGREE-URL and SWI_DEEGREE_REST_API_KEY must be set.")
+        return -1
+
+    url = f"{swi_degree_url}/deegree-webservices/config/update"
+    params = {
+        "token": swi_degree_rest_api_key
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            logger.success("Successfully triggered the update of Deegree3")
+        else:
+            logger.warning(f"Error, reponse code {response.status_code}")
+        return response.status_code
+    except Exception as e:
+        logger.error(f"An error occurred while making the request: {e}")
+        return -1
+
+
+def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
+    """
+    Updates the pubdate and fetched date in the abstract of the seaice theme in the theme-wms.xml file.
+
+    Args:
+        xml_file_path (str): Path to the theme-wms.xml file.
+        pubdate (str): The publication date to insert (e.g., "2025-09-07").
+        fetched_date (str): The fetched date to insert (e.g., "2025-09-07").
+        logger (logging.Logger): Logger instance for logging messages.
+    """
+    # Register the namespaces to handle them in XPath-like searches
+    namespaces = {
+        'ns': 'http://www.deegree.org/themes/standard',
+        'd': 'http://www.deegree.org/metadata/description',
+        's': 'http://www.deegree.org/metadata/spatial'
+    }
+
+    try:
+        # Parse the XML file
+        tree = ET.parse(xml_file_path)
+        root = tree.getroot()
+
+        pubdate_str = pubdate.strftime("%Y-%m-%d")
+        fetched_date_str = fetched_date.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Find the abstract element for the seaice theme
+        for theme in root.findall('.//ns:Theme[ns:Identifier="icechart"]', namespaces):
+            abstract = theme.find('d:Abstract', namespaces)
+            if abstract is not None:
+                # Update the abstract text with the new dates
+                abstract.text = f"Latest Ice Chart from cryo.met.no published on {pubdate_str} and fetched on {fetched_date_str}"
+                tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
+                logger.success(f"Successfully updated {xml_file_path} with pubdate={pubdate_str} and fetched_date={fetched_date_str}")
+            else:
+                logger.warning(f"Abstract element not found for seaice theme in {xml_file_path}")
+    except ET.ParseError as e:
+        logger.error(f"Failed to parse {xml_file_path}: {e}")
+        return -1
+    except IOError as e:
+        logger.error(f"Failed to write to {xml_file_path}: {e}")
+        return -1
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while updating {xml_file_path}: {e}")
+        return -1
+    return 200
 
 def main():
     try:
-        os.makedirs(EXPORT_PATH, exist_ok=True)
+        # os.makedirs(EXPORT_PATH, exist_ok=True)
         icechart_gdf, pubdate = clip_land_area(get_latest_icechart(), get_land_contour())
         output_path = os.path.join(EXPORT_PATH, f"{os.getenv('SWI-SEAICE-LAYER-FILE-NAME','latest')}.shp")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         icechart_gdf.to_file(output_path, driver='ESRI Shapefile')
         logger.success(f"Clipped ice chart saved to {output_path}")
 
-        status_code = trigger_truncate_gwc()
+        # status_code = trigger_truncate_gwc()
 
-        if status_code == 200:
+        xml_file_path = os.path.join(EXPORT_PATH,os.getenv('SWI-SEAICE-UPDATE-THEME-DEEGREE','themes/theme_wms.xml'))
+        status_code_1 = update_theme_wms_xml(xml_file_path, pubdate, datetime.now())
+
+        status_code_2 = trigger_reload()
+
+        if status_code_1 == 200 and status_code_2==200:
             # Determine if pubdate is today (weekday) or latest Friday (weekend)
             today = datetime.now().date()
             if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
