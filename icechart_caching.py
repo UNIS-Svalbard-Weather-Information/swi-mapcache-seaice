@@ -172,7 +172,6 @@ def trigger_reload():
     swi_degree_url = os.getenv("SWI-DEEGREE-URL")
     swi_degree_rest_api_key = os.getenv("SWI_DEEGREE_REST_API_KEY")
 
-    print(swi_degree_url, swi_degree_rest_api_key )
 
     if not swi_degree_url or not swi_degree_rest_api_key:
         logger.error("Environment variables SWI-DEEGREE-URL and SWI_DEEGREE_REST_API_KEY must be set.")
