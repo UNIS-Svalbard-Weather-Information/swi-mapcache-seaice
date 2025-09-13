@@ -110,9 +110,9 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
         workspace (str): GeoServer workspace name.
         layer (str): GeoServer layer name.
     """
-    geoserver_url = os.getenv("SWI-GEOSERVER-URL", "http://localhost:8080/geoserver")
-    username = os.getenv("SWI-GEOSERVER-USERNAME", "admin")
-    password = os.getenv("SWI-GEOSERVER-PWD", "geoserver")
+    geoserver_url = os.getenv("SWI-GWC-URL", "http://localhost:8080/geoserver")
+    username = os.getenv("SWI-GWC-USERNAME", "admin")
+    password = os.getenv("SWI-GWC-PWD", "geoserver")
 
     url = f"{geoserver_url}/gwc/rest/seed/{workspace}:{layer}.json"
     logger.debug(f"Constructed URL for GWC truncate: {url}")

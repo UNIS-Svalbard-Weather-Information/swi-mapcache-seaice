@@ -4,14 +4,16 @@ This container is designed to fetch the latest sea ice chart from the Norwegian 
 
 ### Environment Variables
 
-To establish a connection with Deegree3, the following environment variables must be configured:
+    To establish a connection with Deegree3, the following environment variables must be configured:
 
 | Variable                         | Description                                                            |
 | -------------------------------- | ---------------------------------------------------------------------- |
 | `SWI-DEEGREE-URL`              | URL of the Deegree3 instance                                          |
-| `SWI_DEEGREE_REST_API_KEY`         | Username for Deegree3 authentication                                  |
+| `SWI_DEEGREE_REST_API_KEY`         | ApiKey for Deegree3 authentication                                  |
 | `SWI-SEAICE-LAYER-FILE-NAME`     | Name of the output shapefile (default: `latest`)                       |
+| `SWI-SEAICE-UPDATE-THEME-DEEGREE`     | WMS theme to update the abstract of the layer  (default: `themes/theme_wms.xml`)                       |
 | `SWI-SEAICE-MONITORING-ENDPOINT` | URL of the endpoint to request to informe of the successful processing |
+
 
 ### Output
 
