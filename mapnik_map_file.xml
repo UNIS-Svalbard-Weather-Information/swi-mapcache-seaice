@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map[]>
+<Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over">
+  <Parameters>
+    <Parameter name="bounds">3,70,34.9572,81</Parameter>
+    <Parameter name="format"><![CDATA[png8]]></Parameter>
+    <Parameter name="name"><![CDATA[Latest Ice Chart]]></Parameter>
+    <Parameter name="attribution"><![CDATA[Met Norway]]></Parameter>
+    <Parameter name="tilejson"><![CDATA[2.0.0]]></Parameter>
+    <Parameter name="scheme"><![CDATA[xyz]]></Parameter>
+  </Parameters>
+  <Style filter-mode="first" name="nisarctic">
+    <Rule>
+      <Filter><![CDATA[([NIS_CLASS] = 'Very Open Drift Ice')]]></Filter>
+      <PolygonSymbolizer fill="#98fb98" fill-opacity="90" />
+      <LineSymbolizer stroke="#36f736" stroke-linejoin="round" stroke-width="1" />
+    </Rule>
+    <Rule>
+      <Filter><![CDATA[([NIS_CLASS] = 'Open Drift Ice')]]></Filter>
+      <PolygonSymbolizer fill="#ffd700" fill-opacity="90" />
+      <LineSymbolizer stroke="#998100" stroke-linejoin="round" stroke-width="1" />
+    </Rule>
+    <Rule>
+      <Filter><![CDATA[([NIS_CLASS] = 'Close Drift Ice')]]></Filter>
+      <PolygonSymbolizer fill="#ff8c00" fill-opacity="90" />
+      <LineSymbolizer stroke="#995400" stroke-linejoin="round" stroke-width="1" />
+    </Rule>
+    <Rule>
+      <Filter><![CDATA[([NIS_CLASS] = 'Very Close Drift Ice')]]></Filter>
+      <PolygonSymbolizer fill="#cc0000" fill-opacity="90" />
+      <LineSymbolizer stroke="#660000" stroke-linejoin="round" stroke-width="1" />
+    </Rule>
+    <Rule>
+      <Filter><![CDATA[([NIS_CLASS] = 'Fast Ice')]]></Filter>
+      <PolygonSymbolizer fill="#696969" fill-opacity="90" />
+      <LineSymbolizer stroke="#363636" stroke-linejoin="round" stroke-width="1" />
+    </Rule>
+  </Style>
+  <Layer name="latest_ice_chart" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <StyleName>nisarctic</StyleName>
+    <Datasource>
+      <Parameter name="file">./latest.shp</Parameter>
+      <Parameter name="type">shape</Parameter>
+    </Datasource>
+  </Layer>
+</Map>
