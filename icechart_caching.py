@@ -240,6 +240,163 @@ def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
         return -1
     return 200
 
+def create_legend_html(export_path, fetched_date, pubdate):
+    legend_html = f"""
+<div
+  style="
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    border-left: 4px solid #f59e0b;
+  "
+  id="updateWarning"
+>
+  <strong>Notice:</strong> This layer was updated on
+  <strong><span id="updateTime"></span></strong>. Discrepancies may appear for
+  <strong>15 minutes</strong> after the update while the cache updates.
+</div>
+<div
+  style="
+    font-size: 0.875rem;
+    color: #6b7280;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  "
+>
+  This layer was updated on
+  <strong><span id="updateTimeInfo"></span></strong> based on the ice chart
+  published by the <strong>Norwegian Meteorological Institute</strong> ice
+  service on <strong><span id="publishedTime"></span></strong>.
+</div>
+<script>
+  // Set the update and published times (ISO format, parsed as UTC)
+  const updateTime = new Date("{fetched_date.strftime('%Y-%m-%dT%H:%M:%S')}Z");
+  const publishedTime = new Date("{pubdate.strftime('%Y-%m-%dT%H:%M:%S')}Z");
+  const warningDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
+  const endTime = new Date(updateTime.getTime() + warningDuration);
+
+  // Format time for display using the user's local time zone
+  function formatTime(date) {{
+    return date.toLocaleString('en-US', {{
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false // Use 24-hour format
+    }});
+  }}
+
+  // Update the DOM with the formatted times
+  document.getElementById("updateTime").textContent = formatTime(updateTime);
+  document.getElementById("updateTimeInfo").textContent = formatTime(updateTime);
+  document.getElementById("publishedTime").textContent = formatTime(publishedTime);
+
+  // Check if the warning should be visible
+  function checkWarningVisibility() {{
+    const now = new Date();
+    const warningElement = document.getElementById("updateWarning");
+    if (now >= endTime) {{
+      warningElement.style.display = "none";
+    }}
+  }}
+
+  // Check visibility every minute and immediately on page load
+  setInterval(checkWarningVisibility, 60000);
+  checkWarningVisibility();
+</script>
+<div style="display: flex; flex-direction: column; gap: 0.75rem">
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
+    <div
+      style="
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        background-color: #696969;
+        border: 1px solid #3d3d3d;
+        border-radius: 2px;
+      "
+    ></div>
+    <span style="font-size: 0.875rem">Fast Ice (10/10ths)</span>
+  </div>
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
+    <div
+      style="
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        background-color: #cc0000;
+        border: 1px solid #800000;
+        border-radius: 2px;
+      "
+    ></div>
+    <span style="font-size: 0.875rem">Very Close Drift Ice (9-10/10ths)</span>
+  </div>
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
+    <div
+      style="
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        background-color: #ff8c00;
+        border: 1px solid #cc5500;
+        border-radius: 2px;
+      "
+    ></div>
+    <span style="font-size: 0.875rem">Close Drift Ice (7-9/10ths)</span>
+  </div>
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
+    <div
+      style="
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        background-color: #ffd700;
+        border: 1px solid #cc9900;
+        border-radius: 2px;
+      "
+    ></div>
+    <span style="font-size: 0.875rem">Open Drift Ice (4-7/10ths)</span>
+  </div>
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
+    <div
+      style="
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        background-color: #98fb98;
+        border: 1px solid #4cae4c;
+        border-radius: 2px;
+      "
+    ></div>
+    <span style="font-size: 0.875rem">Very Open Drift Ice (1-4/10ths)</span>
+  </div>
+  <div
+    style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem"
+  >
+    <a
+      href="https://cryo.met.no/en/latest-ice-charts"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.75rem; color: #3b82f6; text-decoration: none"
+    >
+      View on Met Norway Ice Service &rarr;
+    </a>
+  </div>
+</div>
+"""
+    try:
+        with open(export_path, "w", encoding="utf-8") as file:
+            file.write(legend_html)
+        logger.success(f"Legend HTML created at {export_path}")
+    except Exception as e:
+        logger.error(f"Failed to create legend HTML: {e}")
+        raise
+
+
 def main():
     try:
         # os.makedirs(EXPORT_PATH, exist_ok=True)
@@ -247,31 +404,37 @@ def main():
         output_path = os.path.join(EXPORT_PATH, f"{os.getenv('SWI-SEAICE-LAYER-FILE-NAME','latest')}.shp")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         icechart_gdf.to_file(output_path, driver='ESRI Shapefile')
+        shutil.copy("mapnik_map_file.xml", output_path.replace('.shp', '.xml'))
         logger.success(f"Clipped ice chart saved to {output_path}")
+
+
+        legendpath = os.getenv('SWI-SEAICE-LAYER-LEGEND-FILE-NAME',"./metadata/met_icechart/legend.html")
+        os.makedirs(os.path.dirname(legendpath), exist_ok=True)
+        create_legend_html(legendpath, datetime.now(), pubdate + timedelta(hours=15))
 
         # status_code = trigger_truncate_gwc()
 
-        xml_file_path = os.path.join(EXPORT_PATH,os.getenv('SWI-SEAICE-UPDATE-THEME-DEEGREE','themes/theme_wms.xml'))
-        status_code_1 = update_theme_wms_xml(xml_file_path, pubdate, datetime.now())
+        # xml_file_path = os.path.join(EXPORT_PATH,os.getenv('SWI-SEAICE-UPDATE-THEME-DEEGREE','themes/theme_wms.xml'))
+        # status_code_1 = update_theme_wms_xml(xml_file_path, pubdate, datetime.now())
 
-        status_code_2 = trigger_reload()
+        # status_code_2 = trigger_reload()
 
-        if status_code_1 == 200 and status_code_2==200:
-            # Determine if pubdate is today (weekday) or latest Friday (weekend)
-            today = datetime.now().date()
-            if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
-                latest_friday = today - timedelta(days=today.weekday() - 4)  # 4 = Friday
-                target_date = latest_friday
+        #if status_code_1 == 200 and status_code_2==200 and True:
+        # Determine if pubdate is today (weekday) or latest Friday (weekend)
+        today = datetime.now().date()
+        if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+            latest_friday = today - timedelta(days=today.weekday() - 4)  # 4 = Friday
+            target_date = latest_friday
+        else:
+            target_date = today
+
+        if pubdate.date() == target_date:
+            endpoint = os.getenv('SWI-SEAICE-MONITORING-ENDPOINT')
+            if endpoint:
+                response = requests.get(endpoint)
+                logger.info(f"GET request to {endpoint} returned status code: {response.status_code}")
             else:
-                target_date = today
-
-            if pubdate.date() == target_date:
-                endpoint = os.getenv('SWI-SEAICE-MONITORING-ENDPOINT')
-                if endpoint:
-                    response = requests.get(endpoint)
-                    logger.info(f"GET request to {endpoint} returned status code: {response.status_code}")
-                else:
-                    logger.warning("SWI-SEAICE-MONITORING-ENDPOINT environment variable not set")
+                logger.warning("SWI-SEAICE-MONITORING-ENDPOINT environment variable not set")
 
         shutil.rmtree(PATH_ICECHART_DATA, ignore_errors=True)
 
