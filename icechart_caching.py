@@ -19,6 +19,7 @@ PATH_LANDCONTOUR_DATA = "./data/landcontour/"
 PATH_ICECHART_DATA = "./data/icechart/"
 ZIP_FILE_PATH = os.path.join(PATH_LANDCONTOUR_DATA, "S250_Land_f.zip")
 EXPORT_PATH = "./export/latest_seaice"
+MAPPROXY_RELOAD = "./reload.trigger"
 
 
 def get_land_contour():
@@ -456,6 +457,8 @@ def main():
                     "SWI-SEAICE-MONITORING-ENDPOINT environment variable not set"
                 )
 
+        with open(MAPPROXY_RELOAD, "a"):
+            pass
         shutil.rmtree(PATH_ICECHART_DATA, ignore_errors=True)
 
     except Exception as e:
