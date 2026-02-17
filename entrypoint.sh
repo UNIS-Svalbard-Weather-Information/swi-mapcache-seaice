@@ -3,7 +3,7 @@
 # Check if DOCKER-CRON is set
 if [ -n "$DOCKER-CRON" ]; then
     # Run the Python script once (with instance check)
-    exec /swi/run-cron.sh
+    /swi/run-cron.sh
 
     # Add an alias for run-cron
     echo "alias run-cron='/swi/run-cron.sh'" >> ~/.bashrc
