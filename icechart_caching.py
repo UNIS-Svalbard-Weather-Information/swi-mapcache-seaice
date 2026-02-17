@@ -11,18 +11,20 @@ import json
 from requests.auth import HTTPBasicAuth
 import numpy as np
 
-os.environ['SHAPE_RESTORE_SHX'] = 'YES'
+os.environ["SHAPE_RESTORE_SHX"] = "YES"
 
 S250_ZIP_URL = "https://next.api.npolar.no/dataset/a23acc28-288b-49ba-ac6d-025d1fdee246/attachment/663eeae6-67ae-4c7f-a4ff-3d1fc8930efb/_blob"
 ICECHART_URL = "https://cryo.met.no/sites/cryo/files/latest/NIS_arctic_latest_pl_a.zip"
-PATH_LANDCONTOUR_DATA = './data/landcontour/'
-PATH_ICECHART_DATA = './data/icechart/'
-ZIP_FILE_PATH = os.path.join(PATH_LANDCONTOUR_DATA, 'S250_Land_f.zip')
-EXPORT_PATH = "./export"
+PATH_LANDCONTOUR_DATA = "./data/landcontour/"
+PATH_ICECHART_DATA = "./data/icechart/"
+ZIP_FILE_PATH = os.path.join(PATH_LANDCONTOUR_DATA, "S250_Land_f.zip")
+EXPORT_PATH = "./export/latest_seaice"
+MAPPROXY_RELOAD = "./reload.trigger"
+
 
 def get_land_contour():
     os.makedirs(PATH_LANDCONTOUR_DATA, exist_ok=True)
-    target_shapefile = os.path.join(PATH_LANDCONTOUR_DATA, 'S250_SHP/S250_Land_f.shp')
+    target_shapefile = os.path.join(PATH_LANDCONTOUR_DATA, "S250_SHP/S250_Land_f.shp")
     if not os.path.isfile(target_shapefile):
         logger.info("Downloading land contour data...")
         try:
@@ -40,6 +42,7 @@ def get_land_contour():
             logger.error(f"An error occurred: {e}")
             raise
     return target_shapefile
+
 
 def get_latest_icechart():
     os.makedirs(PATH_ICECHART_DATA, exist_ok=True)
@@ -65,7 +68,10 @@ def get_latest_icechart():
         logger.error(f"An error occurred: {e}")
         raise
 
-def clip_land_area(icechart_shape_path, landcontour_shape_path, bbox_to_clip=(7.5, 74.0, 36.0, 81.0)):
+
+def clip_land_area(
+    icechart_shape_path, landcontour_shape_path, bbox_to_clip=(7.5, 74.0, 36.0, 81.0)
+):
     logger.info("Starting clipping process...")
     try:
         logger.info("Loading ice chart shapefile...")
@@ -75,17 +81,19 @@ def clip_land_area(icechart_shape_path, landcontour_shape_path, bbox_to_clip=(7.
         if icechart_gdf.crs != landcontour_gdf.crs:
             landcontour_gdf = landcontour_gdf.to_crs(icechart_gdf.crs)
         logger.info("Removing open water and ice free")
-        icechart_gdf = icechart_gdf[~icechart_gdf['NIS_CLASS'].isin(['Open Water', 'Ice Free'])]
+        icechart_gdf = icechart_gdf[
+            ~icechart_gdf["NIS_CLASS"].isin(["Open Water", "Ice Free"])
+        ]
         logger.info("Creating bounding box polygon...")
         bbox_polygon = box(*bbox_to_clip)
         bbox_gdf = gpd.GeoDataFrame(geometry=[bbox_polygon], crs=icechart_gdf.crs)
         logger.info("Clipping ice chart to bounding box...")
         icechart_gdf = gpd.clip(icechart_gdf, bbox_gdf)
         logger.info("Clipping ice chart to land contour...")
-        icechart_gdf = gpd.overlay(icechart_gdf, landcontour_gdf, how='difference')
+        icechart_gdf = gpd.overlay(icechart_gdf, landcontour_gdf, how="difference")
         logger.success("Clipping completed successfully!")
         logger.info("Updating publication date")
-        xml_file_path = icechart_shape_path.replace('.shp', '.xml')
+        xml_file_path = icechart_shape_path.replace(".shp", ".xml")
         try:
             tree = ET.parse(xml_file_path)
             root = tree.getroot()
@@ -124,7 +132,7 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
             "gridSetId": "EPSG:4326",
             "zoomStart": 0,
             "zoomStop": 20,
-            "threadCount": 1
+            "threadCount": 1,
         }
     }
     logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
@@ -136,10 +144,7 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
     try:
         logger.debug(f"Sending POST request to {url} with auth for user: {username}")
         response = requests.post(
-            url,
-            data=json.dumps(payload),
-            headers=headers,
-            auth=auth
+            url, data=json.dumps(payload), headers=headers, auth=auth
         )
 
         logger.info(f"Response status: {response.status_code}")
@@ -160,7 +165,8 @@ def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
     except requests.exceptions.RequestException as e:
         logger.error(f"Request failed with exception: {e}", exc_info=True)
         raise
-    
+
+
 def trigger_reload():
     """
     Sends a GET request to the SWI-DEEGREE-URL/config/update endpoint using the SWI_DEEGREE_REST_API_KEY
@@ -172,15 +178,14 @@ def trigger_reload():
     swi_degree_url = os.getenv("SWI-DEEGREE-URL")
     swi_degree_rest_api_key = os.getenv("SWI_DEEGREE_REST_API_KEY")
 
-
     if not swi_degree_url or not swi_degree_rest_api_key:
-        logger.error("Environment variables SWI-DEEGREE-URL and SWI_DEEGREE_REST_API_KEY must be set.")
+        logger.error(
+            "Environment variables SWI-DEEGREE-URL and SWI_DEEGREE_REST_API_KEY must be set."
+        )
         return -1
 
     url = f"{swi_degree_url}/deegree-webservices/config/update"
-    params = {
-        "token": swi_degree_rest_api_key
-    }
+    params = {"token": swi_degree_rest_api_key}
 
     try:
         response = requests.get(url, params=params)
@@ -206,9 +211,9 @@ def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
     """
     # Register the namespaces to handle them in XPath-like searches
     namespaces = {
-        'ns': 'http://www.deegree.org/themes/standard',
-        'd': 'http://www.deegree.org/metadata/description',
-        's': 'http://www.deegree.org/metadata/spatial'
+        "ns": "http://www.deegree.org/themes/standard",
+        "d": "http://www.deegree.org/metadata/description",
+        "s": "http://www.deegree.org/metadata/spatial",
     }
 
     try:
@@ -221,14 +226,18 @@ def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
 
         # Find the abstract element for the seaice theme
         for theme in root.findall('.//ns:Theme[ns:Identifier="icechart"]', namespaces):
-            abstract = theme.find('d:Abstract', namespaces)
+            abstract = theme.find("d:Abstract", namespaces)
             if abstract is not None:
                 # Update the abstract text with the new dates
                 abstract.text = f"Latest Ice Chart from cryo.met.no published on {pubdate_str} and fetched on {fetched_date_str}"
-                tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
-                logger.success(f"Successfully updated {xml_file_path} with pubdate={pubdate_str} and fetched_date={fetched_date_str}")
+                tree.write(xml_file_path, encoding="utf-8", xml_declaration=True)
+                logger.success(
+                    f"Successfully updated {xml_file_path} with pubdate={pubdate_str} and fetched_date={fetched_date_str}"
+                )
             else:
-                logger.warning(f"Abstract element not found for seaice theme in {xml_file_path}")
+                logger.warning(
+                    f"Abstract element not found for seaice theme in {xml_file_path}"
+                )
     except ET.ParseError as e:
         logger.error(f"Failed to parse {xml_file_path}: {e}")
         return -1
@@ -236,9 +245,12 @@ def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
         logger.error(f"Failed to write to {xml_file_path}: {e}")
         return -1
     except Exception as e:
-        logger.error(f"An unexpected error occurred while updating {xml_file_path}: {e}")
+        logger.error(
+            f"An unexpected error occurred while updating {xml_file_path}: {e}"
+        )
         return -1
     return 200
+
 
 def create_legend_html(export_path, fetched_date, pubdate):
     legend_html = f"""
@@ -273,8 +285,8 @@ def create_legend_html(export_path, fetched_date, pubdate):
 </div>
 <script>
   // Set the update and published times (ISO format, parsed as UTC)
-  const updateTime = new Date("{fetched_date.strftime('%Y-%m-%dT%H:%M:%S')}Z");
-  const publishedTime = new Date("{pubdate.strftime('%Y-%m-%dT%H:%M:%S')}Z");
+  const updateTime = new Date("{fetched_date.strftime("%Y-%m-%dT%H:%M:%S")}Z");
+  const publishedTime = new Date("{pubdate.strftime("%Y-%m-%dT%H:%M:%S")}Z");
   const warningDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
   const endTime = new Date(updateTime.getTime() + warningDuration);
 
@@ -400,15 +412,20 @@ def create_legend_html(export_path, fetched_date, pubdate):
 def main():
     try:
         # os.makedirs(EXPORT_PATH, exist_ok=True)
-        icechart_gdf, pubdate = clip_land_area(get_latest_icechart(), get_land_contour())
-        output_path = os.path.join(EXPORT_PATH, f"{os.getenv('SWI-SEAICE-LAYER-FILE-NAME','latest')}.shp")
+        icechart_gdf, pubdate = clip_land_area(
+            get_latest_icechart(), get_land_contour()
+        )
+        output_path = os.path.join(
+            EXPORT_PATH, f"{os.getenv('SWI-SEAICE-LAYER-FILE-NAME', 'latest')}.shp"
+        )
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        icechart_gdf.to_file(output_path, driver='ESRI Shapefile')
-        shutil.copy("mapnik_map_file.xml", output_path.replace('.shp', '.xml'))
+        icechart_gdf.to_file(output_path, driver="ESRI Shapefile")
+        shutil.copy("mapnik_map_file.xml", output_path.replace(".shp", ".xml"))
         logger.success(f"Clipped ice chart saved to {output_path}")
 
-
-        legendpath = os.getenv('SWI-SEAICE-LAYER-LEGEND-FILE-NAME',"./metadata/met_icechart/legend.html")
+        legendpath = os.getenv(
+            "SWI-SEAICE-LAYER-LEGEND-FILE-NAME", "./metadata/met_icechart/legend.html"
+        )
         os.makedirs(os.path.dirname(legendpath), exist_ok=True)
         create_legend_html(legendpath, datetime.now(), pubdate + timedelta(hours=15))
 
@@ -419,7 +436,7 @@ def main():
 
         # status_code_2 = trigger_reload()
 
-        #if status_code_1 == 200 and status_code_2==200 and True:
+        # if status_code_1 == 200 and status_code_2==200 and True:
         # Determine if pubdate is today (weekday) or latest Friday (weekend)
         today = datetime.now().date()
         if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
@@ -429,18 +446,25 @@ def main():
             target_date = today
 
         if pubdate.date() == target_date:
-            endpoint = os.getenv('SWI-SEAICE-MONITORING-ENDPOINT')
+            endpoint = os.getenv("SWI-SEAICE-MONITORING-ENDPOINT")
             if endpoint:
                 response = requests.get(endpoint)
-                logger.info(f"GET request to {endpoint} returned status code: {response.status_code}")
+                logger.info(
+                    f"GET request to {endpoint} returned status code: {response.status_code}"
+                )
             else:
-                logger.warning("SWI-SEAICE-MONITORING-ENDPOINT environment variable not set")
+                logger.warning(
+                    "SWI-SEAICE-MONITORING-ENDPOINT environment variable not set"
+                )
 
+        with open(MAPPROXY_RELOAD, "a"):
+            pass
         shutil.rmtree(PATH_ICECHART_DATA, ignore_errors=True)
 
     except Exception as e:
         logger.error(f"Failed to save clipped data: {e}")
         raise
+
 
 if __name__ == "__main__":
     main()
