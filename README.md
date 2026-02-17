@@ -25,6 +25,8 @@ The generated shapefile will be saved in `/swi/export`. Ensure this directory is
 
 ## Usage
 
+At the end of the execution, the file `/swi/export/reload.trigger` will be touch to trigger the reload of MapProxy and the update of the input files.
+
 ### Default Mode
 Run the container once and exit after processing:
 ```bash
