@@ -10,6 +10,7 @@ from loguru import logger
 import json
 from requests.auth import HTTPBasicAuth
 import numpy as np
+import io
 
 os.environ["SHAPE_RESTORE_SHX"] = "YES"
 
@@ -19,7 +20,7 @@ PATH_LANDCONTOUR_DATA = "./data/landcontour/"
 PATH_ICECHART_DATA = "./data/icechart/"
 ZIP_FILE_PATH = os.path.join(PATH_LANDCONTOUR_DATA, "S250_Land_f.zip")
 EXPORT_PATH = "./export/latest_seaice"
-MAPPROXY_RELOAD = "./reload.trigger"
+MAPPROXY_RELOAD = "./export/reload.trigger"
 
 
 def get_land_contour():
@@ -457,8 +458,11 @@ def main():
                     "SWI-SEAICE-MONITORING-ENDPOINT environment variable not set"
                 )
 
-        with open(MAPPROXY_RELOAD, "a"):
+        with io.open(MAPPROXY_RELOAD, "ab"):
+            os.utime(MAPPROXY_RELOAD, None)
+            logger.info(f"Touching {MAPPROXY_RELOAD}")
             pass
+            
         shutil.rmtree(PATH_ICECHART_DATA, ignore_errors=True)
 
     except Exception as e:
