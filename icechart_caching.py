@@ -446,7 +446,7 @@ def main():
             target_date = today
 
         if pubdate.date() == target_date:
-            endpoint = os.getenv("SWI-SEAICE-MONITORING-ENDPOINT")
+            endpoint = os.getenv("SWI_SEAICE_MONITORING_ENDPOINT")
             if endpoint:
                 response = requests.get(endpoint)
                 logger.info(
