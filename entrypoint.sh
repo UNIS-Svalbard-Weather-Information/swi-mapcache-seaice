@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Check if DOCKER-CRON is set
-if [ -n "$DOCKER-CRON" ]; then
+if [ -n "$DOCKER_CRON" ]; then
     # Run the Python script once (with instance check)
     /swi/run-cron.sh
 
