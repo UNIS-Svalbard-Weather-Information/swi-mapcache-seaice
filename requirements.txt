@@ -1,5 +1,7 @@
-requests>=2.31.0
+requests>=2.32.2
 loguru>=0.7.0
 geopandas>=0.13.0
 shapely>=2.0.0
 pyproj>=3.4.0
+urllib3>=1.26.19 # not directly required, pinned by Snyk to avoid a vulnerability
+numpy>=1.22.0 # not directly required, pinned by Snyk to avoid a vulnerability
