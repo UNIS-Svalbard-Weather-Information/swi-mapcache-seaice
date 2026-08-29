@@ -1,16 +1,16 @@
-import os
-import requests
-import shutil
-import zipfile
-import geopandas as gpd
-from shapely.geometry import box
-import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
-from loguru import logger
 import json
-from requests.auth import HTTPBasicAuth
+import os
+import shutil
+import xml.etree.ElementTree as ET
+import zipfile
+from datetime import datetime, timedelta
+
+import geopandas as gpd
 import numpy as np
-import io
+import requests
+from loguru import logger
+from requests.auth import HTTPBasicAuth
+from shapely.geometry import box
 
 os.environ["SHAPE_RESTORE_SHX"] = "YES"
 
@@ -32,8 +32,7 @@ def get_land_contour():
             response = requests.get(S250_ZIP_URL, stream=True)
             response.raise_for_status()
             with open(ZIP_FILE_PATH, "wb") as file:
-                for chunk in response.iter_content(chunk_size=1024):
-                    file.write(chunk)
+                file.writelines(response.iter_content(chunk_size=1024))
             logger.info("Download completed. Extracting files...")
             with zipfile.ZipFile(ZIP_FILE_PATH, "r") as zip_ref:
                 zip_ref.extractall(PATH_LANDCONTOUR_DATA)
@@ -53,8 +52,7 @@ def get_latest_icechart():
         response = requests.get(ICECHART_URL, stream=True)
         response.raise_for_status()
         with open(zip_file_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
+            file.writelines(response.iter_content(chunk_size=1024))
         logger.info("Download complete. Extracting files...")
         with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
             zip_ref.extractall(PATH_ICECHART_DATA)
@@ -242,7 +240,7 @@ def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
     except ET.ParseError as e:
         logger.error(f"Failed to parse {xml_file_path}: {e}")
         return -1
-    except IOError as e:
+    except OSError as e:
         logger.error(f"Failed to write to {xml_file_path}: {e}")
         return -1
     except Exception as e:
@@ -458,11 +456,10 @@ def main():
                     "SWI-SEAICE-MONITORING-ENDPOINT environment variable not set"
                 )
 
-        with io.open(MAPPROXY_RELOAD, "ab"):
+        with open(MAPPROXY_RELOAD, "ab"):
             os.utime(MAPPROXY_RELOAD, None)
             logger.info(f"Touching {MAPPROXY_RELOAD}")
-            pass
-            
+
         shutil.rmtree(PATH_ICECHART_DATA, ignore_errors=True)
 
     except Exception as e:

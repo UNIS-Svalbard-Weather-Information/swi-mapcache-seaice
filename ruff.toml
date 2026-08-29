@@ -1,0 +1,12 @@
+[lint]
+ignore = [
+    # Blind `except Exception` is deliberate here: log-and-continue /
+    # log-and-return-error-code, not an aborted run.
+    "BLE001",
+    # The datetime.now() calls compute "today" for weekday/date-window logic,
+    # and the strptime() call parses a bare calendar date ("%Y%m%d") from an
+    # ice-chart XML file that carries no timezone information at all - adding
+    # tz= would be guessing, not a real fix.
+    "DTZ005",
+    "DTZ007",
+]
