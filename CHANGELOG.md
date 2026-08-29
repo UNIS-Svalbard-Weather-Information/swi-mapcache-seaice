@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.15](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.0.14...0.0.15) (2026-08-29)
+
+
+### Bug Fixes
+
+* publish images as a same-run job instead of a separate tag trigger ([e351255](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/commit/e351255067387ce233c5cbc714f225e0dd065b71))
+
 ## [0.0.14](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.0.13...0.0.14) (2026-08-29)
 
 
