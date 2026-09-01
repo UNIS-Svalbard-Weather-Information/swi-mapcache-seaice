@@ -4,4 +4,5 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "deps",
   "semanticCommitScope": "renovate"
+  "commitMessagePrefix": "deps: "
 }
