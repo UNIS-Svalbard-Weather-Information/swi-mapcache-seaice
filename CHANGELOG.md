@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.16](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.0.15...0.0.16) (2026-09-01)
+
+
+### Bug Fixes
+
+* Merge pull request [#15](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/issues/15) from UNIS-Svalbard-Weather-Information/fix-renovate-release-please ([64d5017](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/commit/64d5017522335b0d25596d940e14b255f64117cb))
+
 ## [0.0.15](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.0.14...0.0.15) (2026-08-29)
 
 
