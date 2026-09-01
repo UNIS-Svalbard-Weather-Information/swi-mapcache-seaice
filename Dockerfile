@@ -1,4 +1,4 @@
-FROM python:3.14.4-slim
+FROM python:3.14.7-slim
 
 RUN mkdir /swi
 
