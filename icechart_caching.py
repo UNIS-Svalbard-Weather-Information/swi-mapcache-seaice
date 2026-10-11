@@ -1,9 +1,10 @@
 import json
 import os
 import shutil
+import tempfile
 import xml.etree.ElementTree as ET
 import zipfile
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import geopandas as gpd
 import numpy as np
@@ -21,6 +22,57 @@ PATH_ICECHART_DATA = "./data/icechart/"
 ZIP_FILE_PATH = os.path.join(PATH_LANDCONTOUR_DATA, "S250_Land_f.zip")
 EXPORT_PATH = "./export/latest_seaice"
 MAPPROXY_RELOAD = "./export/reload.trigger"
+
+ICE_CLASSES = [
+    {
+        "id": "fast-ice",
+        "label": "Fast Ice (10/10ths)",
+        "fill": "#696969",
+        "border": "#3d3d3d",
+    },
+    {
+        "id": "very-close-drift-ice",
+        "label": "Very Close Drift Ice (9-10/10ths)",
+        "fill": "#cc0000",
+        "border": "#800000",
+    },
+    {
+        "id": "close-drift-ice",
+        "label": "Close Drift Ice (7-9/10ths)",
+        "fill": "#ff8c00",
+        "border": "#cc5500",
+    },
+    {
+        "id": "open-drift-ice",
+        "label": "Open Drift Ice (4-7/10ths)",
+        "fill": "#ffd700",
+        "border": "#cc9900",
+    },
+    {
+        "id": "very-open-drift-ice",
+        "label": "Very Open Drift Ice (1-4/10ths)",
+        "fill": "#98fb98",
+        "border": "#4cae4c",
+    },
+]
+ICE_CHART_LINK = {
+    "label": "View on Met Norway Ice Service",
+    "url": "https://cryo.met.no/en/latest-ice-charts",
+}
+LEGEND_SWATCH_HTML = """  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
+    <div
+      style="
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        background-color: {fill};
+        border: 1px solid {border};
+        border-radius: 2px;
+      "
+    ></div>
+    <span style="font-size: 0.875rem">{label}</span>
+  </div>
+"""
 
 
 def get_land_contour():
@@ -252,6 +304,9 @@ def update_theme_wms_xml(xml_file_path, pubdate, fetched_date):
 
 
 def create_legend_html(export_path, fetched_date, pubdate):
+    swatches = "".join(
+        LEGEND_SWATCH_HTML.format(**ice_class) for ice_class in ICE_CLASSES
+    )
     legend_html = f"""
 <div
   style="
@@ -320,72 +375,7 @@ def create_legend_html(export_path, fetched_date, pubdate):
   checkWarningVisibility();
 </script>
 <div style="display: flex; flex-direction: column; gap: 0.75rem">
-  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
-    <div
-      style="
-        width: 1.25rem;
-        height: 1.25rem;
-        flex-shrink: 0;
-        background-color: #696969;
-        border: 1px solid #3d3d3d;
-        border-radius: 2px;
-      "
-    ></div>
-    <span style="font-size: 0.875rem">Fast Ice (10/10ths)</span>
-  </div>
-  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
-    <div
-      style="
-        width: 1.25rem;
-        height: 1.25rem;
-        flex-shrink: 0;
-        background-color: #cc0000;
-        border: 1px solid #800000;
-        border-radius: 2px;
-      "
-    ></div>
-    <span style="font-size: 0.875rem">Very Close Drift Ice (9-10/10ths)</span>
-  </div>
-  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
-    <div
-      style="
-        width: 1.25rem;
-        height: 1.25rem;
-        flex-shrink: 0;
-        background-color: #ff8c00;
-        border: 1px solid #cc5500;
-        border-radius: 2px;
-      "
-    ></div>
-    <span style="font-size: 0.875rem">Close Drift Ice (7-9/10ths)</span>
-  </div>
-  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
-    <div
-      style="
-        width: 1.25rem;
-        height: 1.25rem;
-        flex-shrink: 0;
-        background-color: #ffd700;
-        border: 1px solid #cc9900;
-        border-radius: 2px;
-      "
-    ></div>
-    <span style="font-size: 0.875rem">Open Drift Ice (4-7/10ths)</span>
-  </div>
-  <div style="display: flex; align-items: flex-start; gap: 0.75rem">
-    <div
-      style="
-        width: 1.25rem;
-        height: 1.25rem;
-        flex-shrink: 0;
-        background-color: #98fb98;
-        border: 1px solid #4cae4c;
-        border-radius: 2px;
-      "
-    ></div>
-    <span style="font-size: 0.875rem">Very Open Drift Ice (1-4/10ths)</span>
-  </div>
-  <div
+{swatches}  <div
     style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem"
   >
     <a
@@ -408,6 +398,39 @@ def create_legend_html(export_path, fetched_date, pubdate):
         raise
 
 
+def create_legend_json(export_path, fetched_date, pubdate):
+    """Write the legend as JSON (schema version 1) next to legend.html.
+
+    fetched_date and pubdate are naive UTC datetimes, as for create_legend_html.
+    """
+    iso = "%Y-%m-%dT%H:%M:%SZ"
+    legend = {
+        "version": 1,
+        "title": "Sea ice",
+        "updated": fetched_date.strftime(iso),
+        "published": pubdate.strftime(iso),
+        "items": [
+            {**ice_class, "opacity": 1, "description": None}
+            for ice_class in ICE_CLASSES
+        ],
+        "links": [ICE_CHART_LINK],
+    }
+    directory = os.path.dirname(export_path) or "."
+    fd, tmp = tempfile.mkstemp(dir=directory, suffix=".tmp")
+    try:
+        # Write to a temp file and rename, so MapProxy never serves a partial file.
+        with os.fdopen(fd, "w", encoding="utf-8") as file:
+            json.dump(legend, file, ensure_ascii=False, indent=2)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, export_path)
+        logger.success(f"Legend JSON created at {export_path}")
+    except Exception as e:
+        logger.error(f"Failed to create legend JSON: {e}")
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+
+
 def main():
     try:
         # os.makedirs(EXPORT_PATH, exist_ok=True)
@@ -426,7 +449,13 @@ def main():
             "SWI-SEAICE-LAYER-LEGEND-FILE-NAME", "./metadata/met_icechart/legend.html"
         )
         os.makedirs(os.path.dirname(legendpath), exist_ok=True)
-        create_legend_html(legendpath, datetime.now(), pubdate + timedelta(hours=15))
+        legend_pubdate = pubdate + timedelta(hours=15)
+        create_legend_html(legendpath, datetime.now(), legend_pubdate)
+        create_legend_json(
+            os.path.splitext(legendpath)[0] + ".json",
+            datetime.now(UTC).replace(tzinfo=None),
+            legend_pubdate,
+        )
 
         # status_code = trigger_truncate_gwc()
 
