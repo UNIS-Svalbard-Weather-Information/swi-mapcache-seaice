@@ -5,7 +5,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import icechart_caching as ic  # noqa: E402
+import icechart_caching as ic
 
 FETCHED = datetime(2026, 10, 10, 8, 0, 0)
 PUBLISHED = datetime(2026, 10, 10, 7, 0, 0)
