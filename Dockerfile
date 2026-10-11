@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.14.7
+ARG PYTHON_VERSION=3.14.8
 
 # Stage 1: Dependency resolution
 FROM astral/uv:python3.14-bookworm-slim AS uv
