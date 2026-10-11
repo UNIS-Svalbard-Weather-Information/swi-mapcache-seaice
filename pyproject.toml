@@ -1,0 +1,20 @@
+[project]
+name = "swi-mapcache-seaice"
+version = "0.1.0"
+description = "Cron task that prepares the sea ice chart layers for the SWI map server"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "geopandas>=0.13.0",
+    "loguru>=0.7.0",
+    "numpy>=1.22.0",
+    "pyproj>=3.4.0",
+    "requests>=2.32.2",
+    "shapely>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.2",
+    "ruff>=0.14.10",
+]
