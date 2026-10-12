@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.1.0...0.2.0) (2026-10-12)
+
+
+### Features
+
+* **docker:** run the cron job as an unprivileged user ([824e36e](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/commit/824e36e4c590c59b1b293523c89975d03fd05b4e))
+* **docker:** run the cron job as an unprivileged user ([0557cf7](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/commit/0557cf72e6c754b6b00435fbb2eae1049543a8b8))
+
+
+### Bug Fixes
+
+* **docker:** move to python 3.14.8-slim ([1e464df](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/commit/1e464df93107ad537dc784f89ddb7ffe7335098a))
+
 ## [0.1.0](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.0.15...0.1.0) (2026-10-11)
 
 
