@@ -10,7 +10,6 @@ import geopandas as gpd
 import numpy as np
 import requests
 from loguru import logger
-from requests.auth import HTTPBasicAuth
 from shapely.geometry import box
 
 os.environ["SHAPE_RESTORE_SHX"] = "YES"
@@ -75,6 +74,16 @@ LEGEND_SWATCH_HTML = """  <div style="display: flex; align-items: flex-start; ga
 """
 
 
+def _safe_extractall(zip_ref, target_dir):
+    """Extract all members, rejecting any path that would escape target_dir (zip-slip guard)."""
+    dest = os.path.realpath(target_dir)
+    for member in zip_ref.namelist():
+        resolved = os.path.realpath(os.path.join(dest, member))
+        if resolved != dest and not resolved.startswith(dest + os.sep):
+            raise ValueError(f"Blocked unsafe path in archive (zip slip): {member}")
+    zip_ref.extractall(target_dir)
+
+
 def get_land_contour():
     os.makedirs(PATH_LANDCONTOUR_DATA, exist_ok=True)
     target_shapefile = os.path.join(PATH_LANDCONTOUR_DATA, "S250_SHP/S250_Land_f.shp")
@@ -87,7 +96,7 @@ def get_land_contour():
                 file.writelines(response.iter_content(chunk_size=1024))
             logger.info("Download completed. Extracting files...")
             with zipfile.ZipFile(ZIP_FILE_PATH, "r") as zip_ref:
-                zip_ref.extractall(PATH_LANDCONTOUR_DATA)
+                _safe_extractall(zip_ref, PATH_LANDCONTOUR_DATA)
             os.remove(ZIP_FILE_PATH)
             logger.info("Extraction completed and ZIP file removed.")
         except Exception as e:
@@ -107,7 +116,7 @@ def get_latest_icechart():
             file.writelines(response.iter_content(chunk_size=1024))
         logger.info("Download complete. Extracting files...")
         with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
-            zip_ref.extractall(PATH_ICECHART_DATA)
+            _safe_extractall(zip_ref, PATH_ICECHART_DATA)
         os.remove(zip_file_path)
         logger.info("Extraction completed and ZIP file removed.")
         shapefiles = [f for f in os.listdir(PATH_ICECHART_DATA) if f.endswith(".shp")]
@@ -158,63 +167,6 @@ def clip_land_area(
         return icechart_gdf, date_obj
     except Exception as e:
         logger.error(f"An error occurred during clipping: {e}")
-        raise
-
-
-def trigger_truncate_gwc(workspace="swi", layer="latest_sea_ice_chart"):
-    """
-    Truncate the GeoWebCache for a specified GeoServer layer.
-
-    Args:
-        workspace (str): GeoServer workspace name.
-        layer (str): GeoServer layer name.
-    """
-    geoserver_url = os.getenv("SWI-GWC-URL", "http://localhost:8080/geoserver")
-    username = os.getenv("SWI-GWC-USERNAME", "admin")
-    password = os.getenv("SWI-GWC-PWD", "geoserver")
-
-    url = f"{geoserver_url}/gwc/rest/seed/{workspace}:{layer}.json"
-    logger.debug(f"Constructed URL for GWC truncate: {url}")
-
-    payload = {
-        "seedRequest": {
-            "name": f"{workspace}:{layer}",
-            "type": "truncate",
-            "gridSetId": "EPSG:4326",
-            "zoomStart": 0,
-            "zoomStop": 20,
-            "threadCount": 1,
-        }
-    }
-    logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
-
-    logger.info(f"Attempting to truncate GWC for layer: {workspace}:{layer}")
-    headers = {"Content-type": "application/json"}
-    auth = HTTPBasicAuth(username, password)
-
-    try:
-        logger.debug(f"Sending POST request to {url} with auth for user: {username}")
-        response = requests.post(
-            url, data=json.dumps(payload), headers=headers, auth=auth
-        )
-
-        logger.info(f"Response status: {response.status_code}")
-        logger.debug(f"Response headers: {response.headers}")
-        logger.debug(f"Response text: {response.text}")
-
-        if response.status_code == 200:
-            logger.info("GWC truncate request successful.")
-            return response.status_code
-        else:
-            logger.error(
-                f"GWC truncate request failed. "
-                f"Status: {response.status_code}, "
-                f"Reason: {response.reason}, "
-                f"Response: {response.text}"
-            )
-            return response.status_code
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request failed with exception: {e}", exc_info=True)
         raise
 
 
@@ -456,8 +408,6 @@ def main():
             datetime.now(UTC).replace(tzinfo=None),
             legend_pubdate,
         )
-
-        # status_code = trigger_truncate_gwc()
 
         # xml_file_path = os.path.join(EXPORT_PATH,os.getenv('SWI-SEAICE-UPDATE-THEME-DEEGREE','themes/theme_wms.xml'))
         # status_code_1 = update_theme_wms_xml(xml_file_path, pubdate, datetime.now())
