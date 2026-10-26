@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.2.0...0.2.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **deps:** Update dependabot.yml with commit message prefixes ([8f284b9](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/commit/8f284b9a8a3dfda691bca674be865200b4ac4d39))
+
 ## [0.2.0](https://github.com/UNIS-Svalbard-Weather-Information/swi-mapcache-seaice/compare/0.1.0...0.2.0) (2026-10-12)
 
 
